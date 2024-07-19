@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrazione - Spotify Style</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Roboto', sans-serif; /* Default font */
+            overflow: hidden;
+        }
+        .bg-video-wrap {
+            position: relative;
+            height: 100vh;
+            width: 100%;
+            overflow: hidden;
+        }
+        .bg-video-wrap video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            height: 100%;
+            width: auto;
+            -webkit-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+            object-fit: cover;
+            z-index: -1;
+        }
+        .card {
+            background-color: transparent; /* Transparent background */
+            border: 2px solid rgba(0, 0, 0, 0); /* Initially transparent border */
+            border-radius: 15px;
+            padding: 40px; /* Increased padding */
+            width: 500px; /* Larger width */
+            position: absolute;
+            top: 50%;
+            right: 7%; /* Adjusted to keep it more centered */
+            transform: translateY(-50%);
+            z-index: 1;
+            opacity: 0; /* Start hidden */
+            animation: slideIn 1.2s forwards; /* Slower animation */
+            transition: border-color 1s ease; /* Smooth transition for border color */
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50%) translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(-50%) translateX(0);
+                opacity: 1;
+            }
+        }
+        .card:hover {
+            border-color: #1DB954; /* Border becomes visible */
+        }
+        .card h2 {
+            color: white;
+            font-family: 'Montserrat', sans-serif; /* Different font for title */
+            font-size: 2.5rem; /* Larger font size */
+            margin-bottom: 30px; /* Increased margin for spacing */
+        }
+        .form-group label {
+            color: white;
+            font-size: 1.4rem; /* Larger font size */
+            margin-bottom: 15px; /* Increased margin for spacing */
+        }
+        .form-control {
+            background-color: transparent; /* Transparent background */
+            color: white;
+            border: 2px solid #1DB954;
+            font-size: 1.3rem; /* Larger font size */
+            border-radius: 10px; /* Rounded borders */
+            font-family: 'Roboto', sans-serif; /* Different font for input fields */
+            margin-bottom: 20px; /* Space below each input */
+            padding: 12px 16px; /* Increased padding for better usability */
+            transition: border-color 0.3s ease, transform 0.3s ease; /* Smooth transition */
+        }
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .form-control:focus {
+            background-color: transparent;
+            color: white;
+            border-color: transparent; /* Remove border color on focus */
+            transform: scale(1.02); /* Slightly increase size on focus */
+        }
+        .btn-custom {
+            background-color: #1DB954;
+            color: #191414;
+            font-size: 1.5rem; /* Larger font size */
+            border-radius: 30px; /* Rounded corners */
+            padding: 12px 24px; /* Larger padding for better button size */
+            border: none; /* Remove default border */
+            transition: background-color 0.3s ease, transform 0.3s ease; /* Smooth transition */
+            margin-top: 10px; /* Space above button */
+        }
+        .btn-custom:hover {
+            background-color: #191414;
+            color: #1DB954;
+            transform: scale(1.05); /* Slightly increase button size on hover */
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-video-wrap">
+        <video src="{{ url_for('static', filename='video/dancingman.mp4') }}" autoplay loop muted></video>
+    </div>
+    <div class="card">
+        <h2 class="text-center">Registrati</h2>
+        <form action="{{ url_for('register') }}" method="post">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" class="form-control" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" class="form-control" id="password" name="password" required>
+            </div>
+            <button type="submit" class="btn btn-custom btn-block">Registrati</button>
+        </form>
+    </div>
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

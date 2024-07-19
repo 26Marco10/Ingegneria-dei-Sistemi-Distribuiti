@@ -1,0 +1,4 @@
+autenticazione utente, gestione token per login, sessione per dati temporanei per interazione utente. Login e timeout. Dati permanenti come playlist, canzoni tramite cache o altro
+usa rabbitmq se vuoi
+
+
