@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Spotify</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #00aaff, #ff66cc); /* Gradient blu-rosa */
+      color: #ffffff; /* Testo bianco */
+      overflow-x: hidden;
+    }
+
+    .header {
+      background-color: #3333ff; /* Blu scuro */
+      color: #ffffff; /* Testo bianco */
+      padding: 15px;
+      display: flex;
+      align-items: center;
+      position: relative;
+    }
+
+    .header .logo {
+      width: 150px;
+      margin: 0 auto; /* Centers the logo */
+    }
+
+    .header .sidebar-btn {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background-color: #ff66cc; /* Rosa */
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 50%;
+      cursor: pointer;
+      z-index: 1001;
+      transition: 0.3s;
+    }
+
+    .header .sidebar-btn.open {
+      left: 265px; /* Moves the button to the right of the sidebar */
+    }
+
+    .sidebar {
+      height: 100%;
+      width: 250px;
+      position: fixed;
+      top: 0;
+      left: -250px;
+      background-color: #3333ff; /* Blu scuro */
+      color: #ffffff;
+      overflow-x: hidden;
+      transition: 0.3s;
+      padding-top: 60px;
+      z-index: 1000;
+    }
+
+    .sidebar.open {
+      left: 0;
+    }
+
+    .sidebar .user-info {
+      padding: 15px;
+      background-color: #ffcc00; /* Giallo brillante */
+      color: #3333ff; /* Blu scuro */
+      text-align: center;
+    }
+
+    .sidebar a {
+      padding: 15px 25px;
+      text-decoration: none;
+      font-size: 18px;
+      color: #ffffff;
+      display: block;
+      transition: 0.3s;
+    }
+
+    .sidebar a:hover {
+      background-color: #ff66cc; /* Rosa */
+      color: #3333ff; /* Blu scuro */
+    }
+
+    .content {
+      margin-left: 0;
+      transition: margin-left 0.3s;
+    }
+
+    .content.shifted {
+      margin-left: 250px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    .search-bar {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .search-bar input[type="text"] {
+      background-color: #ffffff; /* Bianco */
+      color: #3333ff; /* Blu scuro */
+      padding: 10px;
+      border-radius: 20px;
+      border: none;
+      width: 400px;
+    }
+
+    .search-bar button {
+      background-color: #ff66cc; /* Rosa */
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin-left: 5px;
+      border-radius: 20px;
+    }
+
+    .search-bar button:hover {
+      background-color: #ff3399; /* Rosa scuro */
+    }
+
+    .playlist, .albums, .artists {
+      transition: max-height 0.5s ease-in-out;
+      overflow: hidden;
+    }
+
+    .playlist-item, .album-item, .artist-item {
+      background-color: #ffffff; /* Bianco */
+      color: #3333ff; /* Blu scuro */
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+    }
+
+    .playlist-item:hover, .album-item:hover, .artist-item:hover {
+      transform: scale(1.05);
+      background-color: #f1f1f1; /* Grigio chiaro */
+    }
+
+    .playlist-item img, .album-item img, .artist-item img {
+      width: 100%;
+      border-radius: 10px;
+    }
+
+    .playlist-heading, #songs-title, #playlists-title, #albums-title, #artists-title {
+      cursor: pointer;
+      color: #3333ff; /* Blu scuro */
+    }
+
+    #songs-title:hover, #playlists-title:hover, #albums-title:hover, #artists-title:hover {
+      color: #ff66cc; /* Rosa */
+    }
+
+    .song-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      margin-bottom: 10px;
+      background-color: #ffffff; /* Bianco */
+      color: #3333ff; /* Blu scuro */
+      border-radius: 10px;
+      transition: background-color 0.3s ease;
+    }
+
+    .song-item:hover {
+      background-color: #f1f1f1; /* Grigio chiaro */
+    }
+
+    .song-item img {
+      width: 55px;
+      height: 55px;
+      margin-right: 10px;
+      border-radius: 6px;
+    }
+
+    .song-details h4 {
+      color: #3333ff; /* Blu scuro */
+    }
+
+    .song-details p {
+      color: #666666; /* Grigio scuro */
+    }
+
+    .download-button {
+      color: #ff66cc; /* Rosa */
+    }
+
+    .download-button:hover {
+      color: #ff3399; /* Rosa scuro */
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <button class="sidebar-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="My Spotify" class="logo">
+  </header>
+
+  <div class="sidebar">
+    <div class="user-info">
+      <h3>Ciao {{ username }}</h3>
+    </div>
+    <a href="#playlists">Playlists</a>
+    <a href="#artists">Artisti</a>
+    <a href="#logout">Logout</a>
+  </div>
+
+  <div class="content">
+    <div class="container">
+      <div class="search-bar">
+        <input type="text" name="search_query" placeholder="Search...">
+        <button type="submit"><i class="fas fa-search"></i></button>
+      </div>
+
+      {% if songs %}
+      <h2 id="songs-title">Songs</h2>
+      <ul class="list-unstyled song-list">
+        {% for song in songs %}
+          <li class="song-item" onclick='Player("{{ song.name }}","{{ song.artist }}")'>
+              <img src="{{ song.image }}" alt="{{ song.name }}">
+              <div class="song-details">
+                  <h4>{{ song.name }}</h4>
+                  <p>{{ song.artist }}</p>
+              </div>
+              <a href="http://localhost:8000/download/{{ song.name }}/{{ song.artist }}" class="download-button" onclick="preventPlayer(event)"><i class="fas fa-download"></i></a>
+          </li>    
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      {% if playlists %}
+      <h2 id="playlists-title">Playlists</h2>
+      <div class="playlist">
+          {% for playlist in playlists %}
+          <a href="http://localhost:8000/playlist/{{ playlist.id }}/{{playlist.name}}" class="playlist-link" style="text-decoration: none;">
+          <div class="playlist-item">
+            <img src="{{ playlist.image }}" alt="{{ playlist.name }}">
+            <h4>{{ playlist.name }}</h4>
+          </div>
+          </a>
+          {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if albums %}
+      <h2 id="albums-title">Albums</h2>
+      <div class="albums">
+          {% for album in albums %}
+          <a href="http://localhost:8000/albums/{{ album.id }}" class="album-link" style="text-decoration: none;">
+          <div class="album-item" style="background-image: url('{{ album.image }}');">
+            <h4>{{album.artist}} - {{ album.name }}</h4>
+          </div>
+          </a>
+          {% endfor %}
+      </div>
+      {% endif %}
+      
+      {% if artists %}
+      <h2 id="artists-title">Artists</h2>
+      <div class="artists">
+          {% for artist in artists %}
+          <a href="http://localhost:8000/artist/{{ artist.id }}" class="artist-link" style="text-decoration: none;">
+          <div class="artist-item">
+            <img src="{{ artist.image }}" alt="{{ artist.name }}">
+            <h4>{{ artist.name }}</h4>
+          </div>
+          </a>
+          {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+  <script>
+    function toggleSidebar() {
+      const sidebar = document.querySelector('.sidebar');
+      const content = document.querySelector('.content');
+      const btn = document.querySelector('.sidebar-btn');
+      sidebar.classList.toggle('open');
+      content.classList.toggle('shifted');
+      btn.classList.toggle('open');
+    }
+
+    document.querySelectorAll('#songs-title, #playlists-title, #albums-title, #artists-title').forEach(title => {
+      title.addEventListener('click', function() {
+        const contentClass = this.id.replace('-title', '');
+        const content = document.querySelector(`.${contentClass}`);
+        content.style.maxHeight = content.style.maxHeight ? null : content.scrollHeight + 'px';
+      });
+    });
+  </script>
+</body>
+</html>

@@ -16,12 +16,14 @@
             font-family: 'Roboto', sans-serif; /* Default font */
             overflow: hidden;
         }
+
         .bg-video-wrap {
             position: relative;
             height: 100vh;
             width: 100%;
             overflow: hidden;
         }
+
         .bg-video-wrap video {
             position: absolute;
             top: 50%;
@@ -33,6 +35,7 @@
             object-fit: cover;
             z-index: -1;
         }
+
         .initial-screen, .card, .logo-login {
             position: absolute;
             top: 50%;
@@ -42,51 +45,71 @@
             opacity: 1;
             transition: all 1s ease;
         }
+
         .initial-screen {
             left: 80%; /* Spostato a destra */
         }
+
         .logo-login {
             left: 20%; /* Spostato a sinistra */
             opacity: 0;
             visibility: hidden;
             transition: opacity 1s ease, visibility 1s ease;
         }
+
         .logo-login.visible {
             opacity: 1;
             visibility: visible;
         }
+
         .initial-screen.hidden {
             opacity: 0;
             transform: translate(100%, -50%);
         }
+
         .initial-screen img, .logo-login img {
             width: 400px; /* Logo ingrandito */
             margin-bottom: 20px;
         }
-        .initial-screen .btn-custom, .logo-login .btn-custom {
-            background-color: #1DB954;
-            color: #191414;
-            font-size: 1.5rem;
-            border-radius: 30px;
-            padding: 12px 24px;
-            border: none;
-            transition: background-color 0.3s ease, transform 0.3s ease;
-            margin: 10px;
-            display: inline-block;
-            width: 200px;
-        }
-        .initial-screen .btn-custom:hover, .logo-login .btn-custom:hover {
-            background-color: #191414;
-            color: #1DB954;
-            transform: scale(1.05);
-        }
+
         .initial-screen .btn-container {
             display: flex;
             justify-content: center;
         }
-        .initial-screen .btn-custom {
+
+        .btn-custom {
+            font-size: 1.5rem;
+            border-radius: 30px;
+            padding: 12px 24px;
+            border: none;
+            transition: background 0.3s ease, transform 0.3s ease;
             margin: 0 10px; /* Pulsanti affiancati */
+            display: inline-block;
+            width: 200px;
         }
+
+        .btn-register {
+            background: linear-gradient(90deg, #FFD700, #FF8C00); /* Gradient giallo a arancione */
+            color: #191414;
+        }
+
+        .btn-login {
+            background: linear-gradient(90deg, #86d3ff, #f82aff); /* Gradient azzurro a rosa */
+            color: #191414;
+        }
+
+        .btn-register:hover, .btn-login:hover {
+            transform: scale(1.05);
+        }
+
+        .btn-register:hover {
+            background: linear-gradient(90deg, #FF8C00, #FFD700); /* Invertito */
+        }
+
+        .btn-login:hover {
+            background: linear-gradient(90deg, #f82aff, #86d3ff); /* Invertito */
+        }
+
         .card {
             left: 80%;
             background-color: transparent;
@@ -99,24 +122,29 @@
             visibility: hidden;
             transition: opacity 1s ease, visibility 1s ease, border-color 0.3s ease;
         }
+
         .card.visible {
             opacity: 1;
             visibility: visible;
         }
+
         .card:hover {
             border-color: rgb(2, 230, 255); /* Bordo azzurro */
         }
+
         .card h2 {
             color: white;
             font-family: 'Montserrat', sans-serif;
             font-size: 2.5rem;
             margin-bottom: 30px;
         }
+
         .form-group label {
             color: white;
             font-size: 1.4rem;
             margin-bottom: 15px;
         }
+
         .form-control {
             background-color: transparent;
             color: white;
@@ -128,47 +156,39 @@
             padding: 12px 16px;
             transition: border-color 0.3s ease, transform 0.3s ease;
         }
+
         .form-control::placeholder {
             color: rgba(255, 255, 255, 0.7);
         }
+
         .form-control:focus {
             background-color: transparent;
             color: white;
             border-color: transparent;
             transform: scale(1.02);
         }
-        .btn-custom {
-            background-color: #1DB954;
-            color: #191414;
-            font-size: 1.5rem;
-            border-radius: 30px;
-            padding: 12px 24px;
-            border: none;
-            transition: background-color 0.3s ease, transform 0.3s ease;
-            margin-top: 10px;
-        }
-        .btn-custom:hover {
-            background-color: #191414;
-            color: #1DB954;
-            transform: scale(1.05);
-        }
     </style>
 </head>
 <body>
+    {% if error %}
+        <script>
+            alert("{{ error }}");
+        </script>
+    {% endif %}
     <div class="bg-video-wrap">
         <video src="{{ url_for('static', filename='video/dancingman.mp4') }}" autoplay loop muted></video>
     </div>
     <div class="initial-screen">
         <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Your Image">
         <div class="btn-container">
-            <button class="btn btn-custom" onclick="showRegister()">Registrazione</button>
-            <button class="btn btn-custom" onclick="showLogin()">Accesso</button>
+            <button class="btn btn-custom btn-register" onclick="showRegister()">Registrazione</button>
+            <button class="btn btn-custom btn-login" onclick="showLogin()">Accesso</button>
         </div>
     </div>
     <div class="logo-login">
         <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Your Image">
         <div>
-            <button id="toggle-button" class="btn btn-custom" onclick="showRegister()">Registrazione</button>
+            <button id="toggle-button" class="btn btn-custom btn-register" onclick="showRegister()">Registrazione</button>
         </div>
     </div>
     <div class="card register-card hidden">
@@ -182,7 +202,7 @@
                 <label for="register-password">Password</label>
                 <input type="password" class="form-control" id="password" name="password" required>
             </div>
-            <button type="submit" class="btn btn-custom btn-block">Registrati</button>
+            <button type="submit" class="btn btn-custom btn-register btn-block">Registrati</button>
         </form>
     </div>
     <div class="card login-card hidden">
@@ -196,7 +216,7 @@
                 <label for="login-password">Password</label>
                 <input type="password" class="form-control" id="password" name="password" required>
             </div>
-            <button type="submit" class="btn btn-custom btn-block">Accedi</button>
+            <button type="submit" class="btn btn-custom btn-login btn-block">Accedi</button>
         </form>
     </div>
     <!-- Bootstrap JS and dependencies -->
@@ -211,6 +231,11 @@
             document.querySelector('.login-card').classList.remove('visible');
             document.getElementById('toggle-button').textContent = 'Accesso';
             document.getElementById('toggle-button').setAttribute('onclick', 'showLogin()');
+            // Change button style to gradient blue to pink
+            document.getElementById('toggle-button').classList.remove('btn-register');
+            document.getElementById('toggle-button').classList.add('btn-login');
+            document.querySelector('.btn-register').classList.add('btn-custom');
+            document.querySelector('.btn-login').classList.remove('btn-custom');
         }
 
         function showLogin() {
@@ -220,6 +245,11 @@
             document.querySelector('.register-card').classList.remove('visible');
             document.getElementById('toggle-button').textContent = 'Registrazione';
             document.getElementById('toggle-button').setAttribute('onclick', 'showRegister()');
+            // Change button style to gradient yellow to orange
+            document.getElementById('toggle-button').classList.remove('btn-login');
+            document.getElementById('toggle-button').classList.add('btn-register');
+            document.querySelector('.btn-login').classList.add('btn-custom');
+            document.querySelector('.btn-register').classList.remove('btn-custom');
         }
     </script>
 </body>
