@@ -1,4 +1,5 @@
-from flask import Flask, request, redirect, render_template, jsonify, make_response
+from flask import Flask, request, redirect, render_template, jsonify, make_response, session
+from flask_session import Session
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
@@ -9,6 +10,11 @@ import base64
 from functools import wraps
 
 app = Flask(__name__)
+
+# Configura Flask-Session
+app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['SESSION_TYPE'] = 'filesystem'  # Puoi usare 'redis', 'memcached', ecc.
+Session(app)
 
 client_id = os.getenv("CLIENT_ID")
 client_secret = os.getenv("CLIENT_SECRET")
@@ -77,7 +83,7 @@ def search_for_playlist(token, playlist_name):
     params = {
         "q": playlist_name,
         "type": "playlist",
-        "limit": "1"
+        "limit": "15"
     }
 
     response = requests.get(url, headers=headers, params=params)
@@ -88,7 +94,7 @@ def search_for_playlist(token, playlist_name):
         print("No playlist found")
         return None
 
-    return json_result[0]
+    return json_result
 
 def get_playlist_songs(token, playlist_id):
     url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
@@ -126,10 +132,6 @@ def register():
         
     return render_template('home.html')
 
-@app.route('/success')
-def success():
-    return "Registrazione avvenuta con successo!"
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -145,6 +147,7 @@ def login():
             user_id = user['id']
             token = jwt.encode({
                 'user_id': user_id,
+                'username': username,  # Include l'username nel payload del token
                 'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
             }, SECRET_KEY, algorithm='HS256')
 
@@ -153,6 +156,7 @@ def login():
                            (user_id, token, expires_at))
             conn.commit()
 
+            session['username'] = username  # Salva l'username nella sessione
             response = make_response(redirect('/personal'))
             response.set_cookie('jwt_token', token)
             conn.close()
@@ -194,29 +198,70 @@ def token_required(f):
 @app.route('/personal', methods=['GET'])
 @token_required
 def personal(user_id):
-    #prendi il token dal cookie
-    token = request.cookies.get('jwt_token')
-    #ottieni l'username dell'utente loggato usando il token
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM users,tokens WHERE tokens.token = ? AND users.id = tokens.user_id', (token,))
-    username = cursor.fetchone()['username']
-    conn.close()
+    # Ottieni l'username dalla sessione
+    username = session.get('username')
 
     spotify_token = get_token()
-    playlist = search_for_playlist(spotify_token, "Top 50 Italia")
+    playlists = search_for_playlist(spotify_token, "Top 50 Italia")
     image_url = "https://icpapagiovanni.edu.it/wp-content/uploads/2017/11/musica-1.jpg"
-    if playlist["images"]:
-        image_url = playlist["images"][0]["url"]
-    playlist_data = {
-        "name": playlist["name"],
-        "id": playlist["id"],
-        "image": image_url,
-        "name": playlist["name"]
-    }
-    return render_template('personal.html', username=username, playlists=playlist_data)
+    playlists_data = []
+    for playlist in playlists:
+        if playlist["images"]:
+            image_url = playlist["images"][0]["url"]
+        playlist_data = {
+            "name": playlist["name"],
+            "id": playlist["id"],
+            "image": image_url,
+            "name": playlist["name"]
+        }
+        playlists_data.append(playlist_data)
 
-    
+    return render_template('personal.html', username=username, playlists=playlists_data)
+
+@app.route('/search', methods=['GET','POST'])
+@token_required
+def search(user_id):
+    # Ottieni l'username dalla sessione
+    username = session.get('username')
+
+    spotify_token = get_token()
+    if request.method == 'GET':
+        return render_template('search.html', username=username)
+    search_query = request.form['search_query']
+    playlists = search_for_playlist(spotify_token, search_query)
+    image_url = "https://icpapagiovanni.edu.it/wp-content/uploads/2017/11/musica-1.jpg"
+    playlists_data = []
+    for playlist in playlists:
+        if playlist["images"]:
+            image_url = playlist["images"][0]["url"]
+        playlist_data = {
+            "name": playlist["name"],
+            "id": playlist["id"],
+            "image": image_url,
+            "name": playlist["name"]
+        }
+        playlists_data.append(playlist_data)
+
+    return render_template('search.html', username=username, playlists=playlists_data, search_query=search_query)
+
+@app.route('/playlist/<playlist_id>/<playlist_name>', methods=['GET'])
+@token_required
+def playlist(user_id, playlist_id, playlist_name):
+    # Ottieni l'username dalla sessione
+    username = session.get('username')
+
+    spotify_token = get_token()
+    songs = get_playlist_songs(spotify_token, playlist_id)
+    songs_data = []
+    for song in songs:
+        song_data = {
+            "name": song["track"]["name"],
+            "artist": song["track"]["artists"][0]["name"],
+            "image": song["track"]["album"]["images"][0]["url"]
+        }
+        songs_data.append(song_data)
+
+    return render_template('playlist.html', username=username, songs=songs_data, playlist_name=playlist_name)
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=8000, debug=True)

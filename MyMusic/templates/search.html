@@ -61,6 +61,33 @@
       font-family: 'Times New Roman', Times, serif;
       color: yellow;
     }
+    .search-container {
+      text-align: center;
+      margin: 20px auto;
+    }
+    .search-container input[type="text"] {
+      padding: 10px;
+      font-size: 1em;
+      border: 2px solid #FF69B4; /* Pink border color */
+      border-radius: 20px;
+      width: 300px;
+      max-width: 100%;
+      margin-right: 10px;
+    }
+    .search-container button {
+      padding: 10px 20px;
+      font-size: 1em;
+      border: none;
+      background: linear-gradient(to right, #1E90FF, #FF69B4); /* Button gradient */
+      color: #FFFFFF; /* White text color */
+      border-radius: 20px;
+      cursor: pointer;
+      transition: background 0.3s ease, color 0.3s ease; /* Transition for color change */
+    }
+    .search-container button:hover {
+      background: linear-gradient(to right, #FFFF00, #FF69B4); /* Button gradient on hover */
+      color: #000000; /* Black text color on hover */
+    }
     .playlist {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -70,7 +97,7 @@
       border: 1px solid #FF69B4; /* Pink border color */
       padding: 10px;
       text-align: center;
-      background: linear-gradient(to right, #002aff, #ff0000); 
+      background: linear-gradient(to right, #002aff, #ff0000);
       color: #FFFFFF; /* White text color */
       width: 200px;
       height: 280px;
@@ -95,31 +122,38 @@
 </head>
 <body>
 
-  <header>
-    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Your Image" style="width: auto; height: 150px; padding-bottom: 20px;">
-    <nav>
-      <ul>
-        <li><a href="http://localhost:8000/personal">Home</a></li>
-        <li><a href="http://localhost:8000/search">Search</a></li>
-      </ul>
-    </nav>
-  </header>
+    <header>
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Your Image" style="width: auto; height: 150px; padding-bottom: 20px;">
+        <nav>
+          <ul>
+            <li><a href="http://localhost:8000/personal">Home</a></li>
+            <li><a href="http://localhost:8000/search">Search</a></li>
+          </ul>
+        </nav>
+      </header>
 
-  
   <div class="container">
     <h1>Benvenuto {{ username }}</h1>
-    <h2>Featured Playlists</h2>
+    <div class="search-container">
+      <form action="http://localhost:8000/search" method="post">
+        <input type="text" name="search_query" placeholder="Search playlists...">
+        <button type="submit">Search</button>
+      </form>
+    </div>
+    {% if playlists %}
+    <h2>Results for {{ search_query}}</h2>
     <div class="playlist">
-        {% for playlist in playlists %}
-        <a href="http://localhost:8000/playlist/{{ playlist.id }}/{{playlist.name}}" class="playlist-link" style="text-decoration: none;">
+      {% for playlist in playlists %}
+      <a href="http://localhost:8000/playlist/{{ playlist.id }}/{{ playlist.name }}" class="playlist-link" style="text-decoration: none;">
         <div class="playlist-item">
           <img src="{{ playlist.image }}" alt="{{ playlist.name }}">
           <h3>{{ playlist.name }}</h3>
         </div>
-        </a>
-        {% endfor %}
+      </a>
+      {% endfor %}
       <!-- More playlist items can be added here -->
     </div>
+    {% endif %}
   </div>
 </body>
 <script>
@@ -128,18 +162,18 @@
 
   // Iterate over each element
   albumTitles.forEach(function(title) {
-  // Set the maximum allowed text length before changing the tag
-  var maxLength = 30;
+    // Set the maximum allowed text length before changing the tag
+    var maxLength = 30;
 
-  // Check the length of the text inside the h3
-  if (title.textContent.length > maxLength) {
+    // Check the length of the text inside the h3
+    if (title.textContent.length > maxLength) {
       // Create a new h5 element
       var newTitle = document.createElement('h5');
       // Copy the content from h3 to h5
       newTitle.textContent = title.textContent;
       // Replace the h3 with h5
       title.parentNode.replaceChild(newTitle, title);
-  }
+    }
   });
 
   function Saved() {
