@@ -47,6 +47,14 @@ def init_db():
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
     ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS playlists (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            playlist_id TEXT NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -107,9 +115,22 @@ def get_playlist_songs(token, playlist_id):
     response.raise_for_status()
     return response.json()["items"]
 
+def get_playlist_by_id(token, playlist_id):
+    url = f"https://api.spotify.com/v1/playlists/{playlist_id}"
+    headers = get_auth_header(token)
+
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    return response.json()
+    
 @app.route('/')
 def home():
-    return render_template('home.html')
+    #cancella la sessione e il cookie
+    session.clear()
+    response = make_response(render_template('home.html'))
+    response.set_cookie('jwt_token', '', expires=0)
+    return response
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -202,16 +223,24 @@ def personal(user_id):
     username = session.get('username')
 
     spotify_token = get_token()
-    playlists = search_for_playlist(spotify_token, "Top 50 Italia")
-    image_url = "https://icpapagiovanni.edu.it/wp-content/uploads/2017/11/musica-1.jpg"
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM playlists WHERE user_id = ?', (user_id,))
+    playlists_ids = cursor.fetchall()
+    conn.close()
+    playlists = []
+    for playlist_id in playlists_ids:
+        playlist = get_playlist_by_id(spotify_token, playlist_id["playlist_id"])
+        playlists.append(playlist)
+    img_url = "https://icpapagiovanni.edu.it/wp-content/uploads/2017/11/musica-1.jpg"
     playlists_data = []
     for playlist in playlists:
         if playlist["images"]:
-            image_url = playlist["images"][0]["url"]
+            img_url = playlist["images"][0]["url"]
         playlist_data = {
             "name": playlist["name"],
             "id": playlist["id"],
-            "image": image_url,
+            "image": img_url,
             "name": playlist["name"]
         }
         playlists_data.append(playlist_data)
@@ -261,7 +290,39 @@ def playlist(user_id, playlist_id, playlist_name):
         }
         songs_data.append(song_data)
 
-    return render_template('playlist.html', username=username, songs=songs_data, playlist_name=playlist_name)
+    return render_template('playlist.html', username=username, songs=songs_data, playlist_name=playlist_name, playlist_id=playlist_id)
+
+@app.route('/add_playlist', methods=['POST'])
+@token_required
+def add_playlist(user_id):
+    data = request.get_json()
+    playlist_id = data['id']
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM playlists WHERE playlist_id = ?', (playlist_id,))
+    playlist = cursor.fetchone()
+    if playlist:
+        print("Playlist already added")
+        conn.close()
+        return jsonify({'status': 'error', 'message': 'Playlist già aggiunta!'}), 400
+    else:
+        cursor.execute('INSERT INTO playlists (user_id, playlist_id) VALUES (?, ?)', (user_id, playlist_id))
+        conn.commit()
+        conn.close
+        print("Playlist added")
+    return jsonify({'status': 'success', 'message': 'Playlist aggiunta con successo!'})
+
+@app.route('/logout', methods=['GET'])
+@token_required
+def logout(user_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM tokens WHERE user_id = ?', (user_id,))
+    conn.commit()
+    conn.close()
+    response = make_response(redirect('/'))
+    response.set_cookie('jwt_token', '', expires=0)
+    return redirect('/')
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=8000, debug=True)

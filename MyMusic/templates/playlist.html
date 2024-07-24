@@ -14,11 +14,13 @@
       color: #FF69B4; /* Pink text color */
     }
     header {
-      background:  linear-gradient(to right, #002aff, #ff0000);  /* Gradient background */
+      background: linear-gradient(to right, #002aff, #ff0000);  /* Gradient background */
       color: #FF69B4; /* Pink text color */
       padding: 20px 10px;
       text-align: center;
+      position: relative;
     }
+
     header img {
       width: auto;
       height: 100px;
@@ -105,7 +107,7 @@
       color: #FFFFFF; /* White text color */
     }
     .song-item:hover {
-      transform: scale(1.05); /* Slightly enlarge on hover */
+      transform: scale(1.05); /* Slightly enlarge on hover */;
       background: linear-gradient(to right, #ff9500, #ff0000); /* Gradient background on hover */
       cursor: pointer;
     }
@@ -120,7 +122,7 @@
     }
     .song-item h4 {
       margin: 0; /* Remove margin */
-      color: #FF69B4; /* Pink text color */
+      color: #ffffff; /* Pink text color */
     }
     .song-item p {
       margin: 0; /* Remove margin */
@@ -132,17 +134,41 @@
       margin-left: 15px;
     }
     .download-button_1 {
-      color: #FF69B4;
+      color: #faf200;
       font-size: 20px;
       float: right;
       margin-right: 15px;
       margin-top: 20px;
+    }
+    .download-button_1:hover {
+      color: #faf200;
+      cursor: pointer;
+      /* diventa più grande con animazione*/
+      transition: transform 0.3s ease;
+      transform: scale(1.4);
+    }
+    .logout-button {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: linear-gradient(to right, #1E90FF, #FF69B4); /* Button gradient */
+      color: #FFFFFF; /* White text color */
+      border: none;
+      padding: 10px 20px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: background 0.3s ease, color 0.3s ease; /* Transition for color change */
+    }
+    .logout-button:hover {
+      background: linear-gradient(to right, #FFFF00, #FF69B4); /* Button gradient on hover */
+      color: #000000; /* Black text color on hover */
     }
   </style>
 </head>
 <body>
 
     <header>
+        <button class="logout-button" onclick="window.location.href='http://localhost:8000/logout'">Logout</button>
         <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Your Image" style="width: auto; height: 150px; padding-bottom: 20px;">
         <nav>
           <ul>
@@ -154,7 +180,9 @@
 
 
   <div class="container">
+    <a class="download-button_1" onclick="addPlaylist('{{playlist_id}}')"><i class="fas fa-plus"></i></a>
     <h2 class="playlist-heading">{{playlist_name}}</h2>
+    
     <ul class="song-list">
       {% for song in songs %}
         <li class="song-item" onclick='Player("{{ song.name }}","{{ song.artist }}")'>
@@ -178,9 +206,25 @@
     event.stopPropagation();
   }
 
-  function Saved() {
-    // Redirect the entire page to the saved page, not only the iframe
-    parent.location.href = 'http://localhost:8000/local';
+
+  function addPlaylist(playlistId) {
+      fetch('http://localhost:8000/add_playlist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: playlistId }),
+      })
+      .then(response => {
+        if (response.ok) {
+          alert('Playlist aggiunta!');
+        } else {
+          alert('Playlist già aggiunta.');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
   }
 </script>
 </body>

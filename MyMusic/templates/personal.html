@@ -14,16 +14,33 @@
       color: #FF69B4; /* Pink text color */
     }
     header {
-      background:  linear-gradient(to right, #002aff, #ff0000);  /* Gradient background */
+      background: linear-gradient(to right, #002aff, #ff0000);  /* Gradient background */
       color: #FF69B4; /* Pink text color */
       padding: 20px 10px;
       text-align: center;
+      position: relative;
     }
     header img {
       width: auto;
       height: 100px;
       display: block;
       margin: 0 auto;
+    }
+    .logout-button {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: linear-gradient(to right, #1E90FF, #FF69B4); /* Button gradient */
+      color: #FFFFFF; /* White text color */
+      border: none;
+      padding: 10px 20px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: background 0.3s ease, color 0.3s ease; /* Transition for color change */
+    }
+    .logout-button:hover {
+      background: linear-gradient(to right, #FFFF00, #FF69B4); /* Button gradient on hover */
+      color: #000000; /* Black text color on hover */
     }
     nav {
       margin-top: 10px;
@@ -96,6 +113,7 @@
 <body>
 
   <header>
+    <button class="logout-button" onclick="window.location.href='http://localhost:8000/logout'">Logout</button>
     <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Your Image" style="width: auto; height: 150px; padding-bottom: 20px;">
     <nav>
       <ul>
@@ -105,10 +123,11 @@
     </nav>
   </header>
 
-  
   <div class="container">
     <h1>Benvenuto {{ username }}</h1>
+    {% if playlists %}
     <h2>Featured Playlists</h2>
+    {% endif %}
     <div class="playlist">
         {% for playlist in playlists %}
         <a href="http://localhost:8000/playlist/{{ playlist.id }}/{{playlist.name}}" class="playlist-link" style="text-decoration: none;">
