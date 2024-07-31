@@ -108,12 +108,86 @@
       max-height: 200px; /* Limit image height */
       border-radius: 10px; /* Rounded corners for image */
     }
+    .add-button {
+      background-color: #32CD32; /* Green background color */
+      color: #000000; /* Black text color */
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.3s ease, color 0.3s ease; /* Transition for color change */
+      margin-top: 10px; /* Margin to separate from other elements */
+      z-index: 100;
+    }
+    .add-button:hover {
+      background-color: #FFFFFF; /* White background color on hover */
+      color: #000000; /* Black text color on hover */
+    }
+    .playlist-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .playlist-container .playlist-item {
+      margin-bottom: 10px; /* Space between playlist item and button */
+    }
+    .video-container {
+      position: relative;
+      width: 80%;
+      height: 300px;
+      left: 10%;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      background-color: black;
+      overflow: hidden; /* Ensure the video fits within the container */
+      border: 2px solid lightblue;
+      transition: transform 0.3s ease; /* Smooth transition effect */
+    }
+    .video-container:hover {
+      transform: scale(1.1); /* Slightly enlarge on hover */
+      cursor: pointer;
+    }
+    .video-container video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain; /* Ensure the video fills the container */
+      filter: brightness(50%); /* Darken the video */
+    }
+    .video-container .overlay-text {
+      position: absolute;
+      top: 50%;
+      left: 15%; /* Move it slightly to the left */
+      transform: translate(-20%, -50%); /* Adjust to center more to the left */
+      color: #FFFF00; /* Yellow text color */
+      font-size: 2.5em; /* Adjusted font size for better visibility */
+      padding: 10px 20px;
+      border-radius: 10px;
+    }
+    .video-container .additional-info {
+      position: absolute;
+      top: 50%;
+      right: 50px;
+      transform: translateY(-50%); /* Center vertically */
+      color: #FFFF00; /* Yellow text color */
+      font-size: 1.5em; /* Larger font size */
+      text-align: right; /* Align text to the right */
+    }
+    .video-container .additional-info p {
+      margin: 0; /* Remove default margin */
+      line-height: 1.5; /* Increase line-height for better readability */
+    }
+    .italy-top {
+      color: #FFFF00; /* Yellow color */
+    }
+    .global-top {
+      color: #00FF00; /* Green color */
+    }
   </style>
 </head>
 <body>
 
   <header>
-    <button class="logout-button" onclick="window.location.href='http://localhost:8000/logout'">Logout</button>
+    <button class="logout-button" onclick="confirmLogout()">Logout</button>
     <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Your Image" style="width: auto; height: 150px; padding-bottom: 20px;">
     <nav>
       <ul>
@@ -125,45 +199,96 @@
 
   <div class="container">
     <h1>Benvenuto {{ username }}</h1>
-    {% if playlists %}
-    <h2>Featured Playlists</h2>
-    {% endif %}
-    <div class="playlist">
-        {% for playlist in playlists %}
-        <a href="http://localhost:8000/playlist/{{ playlist.id }}/{{playlist.name}}" class="playlist-link" style="text-decoration: none;">
-        <div class="playlist-item">
-          <img src="{{ playlist.image }}" alt="{{ playlist.name }}">
-          <h3>{{ playlist.name }}</h3>
-        </div>
-        </a>
-        {% endfor %}
-      <!-- More playlist items can be added here -->
+    
+    <!-- Video section -->
+    <div class="video-container" onclick="redirectToPlaylist()">
+      <video autoplay muted loop>
+        <source src="{{ url_for('static', filename='video/dancingman.mp4') }}" type="video/mp4">
+        Your browser does not support the video tag.
+      </video>
+      <div class="overlay-text">La Tua Playlist</div>
+      <div class="additional-info">
+        <p class="italy-top">Top in Italia: {{italy_top50}}</p>
+        <p class="global-top">Top in Global: {{global_top50}}</p>
+      </div>
     </div>
+    
+    {% if session_playlists %}
+    <h2>Playlists da aggiungere ai preferiti:</h2>
+    <div class="playlist">
+      {% for playlist in session_playlists %}
+      <div class="playlist-container">
+        <a href="http://localhost:8000/playlist/{{ playlist.id }}/{{playlist.name}}" class="playlist-link" style="text-decoration: none;">
+          <div class="playlist-item">
+            <img src="{{ playlist.image }}" alt="{{ playlist.name }}">
+            <h3>{{ playlist.name }}</h3>
+          </div>
+        </a>
+        <button class="add-button" onclick="addToFavorites(event, '{{ playlist.id }}')">Aggiungi</button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if playlists %}
+    <h2>Playlists Salvate</h2>
+    <div class="playlist">
+      {% for playlist in playlists %}
+      <div class="playlist-container">
+        <a href="http://localhost:8000/playlist/{{ playlist.id }}/{{playlist.name}}" class="playlist-link" style="text-decoration: none;">
+          <div class="playlist-item">
+            <img src="{{ playlist.image }}" alt="{{ playlist.name }}">
+            <h3>{{ playlist.name }}</h3>
+          </div>
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
   </div>
+
+  <script>
+    function confirmLogout() {
+      // Mostra una finestra di conferma
+      var isConfirmed = confirm('Sei sicuro di voler effettuare il logout?');
+      if (isConfirmed) {
+        // Se l'utente conferma, esegui il logout
+        window.location.href = 'http://localhost:8000/logout';
+      }
+    }
+
+    function addToFavorites(event, playlistId) {
+      event.stopPropagation();  // Impedisce la propagazione dell'evento di clic
+      alert('Playlist aggiunta ai preferiti!');
+      window.location.href = `http://localhost:8000/save_playlist/${playlistId}`;
+    }
+
+    function redirectToPlaylist() {
+      window.location.href = 'http://localhost:8000/favorite'; // Replace with the actual link
+    }
+    
+    // Select all h3 elements
+    var albumTitles = document.querySelectorAll('.playlist-item h3');
+
+    // Iterate over each element
+    albumTitles.forEach(function(title) {
+      // Set the maximum allowed text length before changing the tag
+      var maxLength = 30;
+
+      // Check the length of the text inside the h3
+      if (title.textContent.length > maxLength) {
+        // Create a new h5 element
+        var newTitle = document.createElement('h5');
+        // Copy the content from h3 to h5
+        newTitle.textContent = title.textContent;
+        // Replace the h3 with h5
+        title.parentNode.replaceChild(newTitle, title);
+      }
+    });
+
+    function Saved() {
+      // Redirect the entire page to the saved page, not only the iframe
+      parent.location.href = 'http://localhost:8000/local';
+    }
+  </script>
 </body>
-<script>
-  // Select all h3 elements
-  var albumTitles = document.querySelectorAll('.playlist-item h3');
-
-  // Iterate over each element
-  albumTitles.forEach(function(title) {
-  // Set the maximum allowed text length before changing the tag
-  var maxLength = 30;
-
-  // Check the length of the text inside the h3
-  if (title.textContent.length > maxLength) {
-      // Create a new h5 element
-      var newTitle = document.createElement('h5');
-      // Copy the content from h3 to h5
-      newTitle.textContent = title.textContent;
-      // Replace the h3 with h5
-      title.parentNode.replaceChild(newTitle, title);
-  }
-  });
-
-  function Saved() {
-    // Redirect the entire page to the saved page, not only the iframe
-    parent.location.href = 'http://localhost:8000/local';
-  }
-</script>
 </html>

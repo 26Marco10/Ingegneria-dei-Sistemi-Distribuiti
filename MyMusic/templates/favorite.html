@@ -20,12 +20,12 @@
       text-align: center;
       position: relative;
     }
-
     header img {
       width: auto;
-      height: 100px;
+      height: 150px;
       display: block;
       margin: 0 auto;
+      padding-bottom: 20px;
     }
     nav {
       margin-top: 10px;
@@ -98,6 +98,7 @@
     .song-item {
       display: flex;
       align-items: center;
+      justify-content: space-between; /* Spaziatura tra gli elementi */
       margin-bottom: 20px; /* Increased space between songs */
       border: 1px solid #FF69B4; /* Pink border color */
       padding: 10px;
@@ -107,7 +108,7 @@
       color: #FFFFFF; /* White text color */
     }
     .song-item:hover {
-      transform: scale(1.05); /* Slightly enlarge on hover */;
+      transform: scale(1.05); /* Slightly enlarge on hover */
       background: linear-gradient(to right, #ff9500, #ff0000); /* Gradient background on hover */
       cursor: pointer;
     }
@@ -122,11 +123,23 @@
     }
     .song-item h4 {
       margin: 0; /* Remove margin */
-      color: #ffffff; /* Pink text color */
+      color: #ffffff; /* White text color */
     }
     .song-item p {
       margin: 0; /* Remove margin */
       color: rgb(255, 255, 255); /* White text color */
+    }
+    .song-item .song-position {
+      margin-left: 20px; /* Spazio tra i dettagli e la posizione */
+      font-weight: bold;
+    }
+    .song-item .position-italy {
+      color: #faf200; /* Giallo per l'Italia */
+      font-size: 1.5em;
+    }
+    .song-item .position-global {
+      color: #00ff00; /* Verde per il Global */
+      font-size: 1.5em;
     }
     .download-button {
       color: #FF69B4;
@@ -167,30 +180,31 @@
 </head>
 <body>
 
-    <header>
-        <button class="logout-button" onclick="confirmLogout()">Logout</button>
-        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Your Image" style="width: auto; height: 150px; padding-bottom: 20px;">
-        <nav>
-          <ul>
-            <li><a href="http://localhost:8000/personal">Home</a></li>
-            <li><a href="http://localhost:8000/search">Search</a></li>
-          </ul>
-        </nav>
-      </header>
+  <header>
+    <button class="logout-button" onclick="confirmLogout()">Logout</button>
+    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Your Image" style="width: auto; height: 150px; padding-bottom: 20px;">
+    <nav>
+      <ul>
+        <li><a href="http://localhost:8000/personal">Home</a></li>
+        <li><a href="http://localhost:8000/search">Search</a></li>
+      </ul>
+    </nav>
+  </header>
 
   <div class="container">
-    <a class="download-button_1" onclick="addPlaylist('{{playlist_id}}')"><i class="fas fa-plus"></i></a>
-    <h2 class="playlist-heading">{{playlist_name}}</h2>
+    <h2 class="playlist-heading">La Tua Playlist</h2>
     
     <ul class="song-list">
       {% for song in songs %}
         <li class="song-item" onclick='Player("{{ song.name }}","{{ song.artist }}")'>
-            <img src="{{ song.image }}" alt="{{ song.name }}">
-            <div class="song-details">
-                <h4>{{ song.name }}</h4>
-                <p>{{ song.artist }}</p>
-            </div>
-            <a class="download-button_1" onclick="addSong('{{song.name}}', '{{song.image}}', '{{song.artist}}')"><i class="fas fa-plus"></i></a>
+          <img src="{{ song.image }}" alt="{{ song.name }}">
+          <div class="song-details">
+            <h4>{{ song.name }}</h4>
+            <p>{{ song.artist }}</p>
+          </div>
+          <div class="song-position {{ 'position-italy' if song.country == 'Italy' else 'position-global' }}">
+            {{ song.position }}
+          </div>
         </li>    
       {% endfor %}
     </ul>
@@ -198,10 +212,8 @@
 
 <script>
   function confirmLogout() {
-    // Mostra una finestra di conferma
     var isConfirmed = confirm('Sei sicuro di voler effettuare il logout?');
     if (isConfirmed) {
-      // Se l'utente conferma, esegui il logout
       window.location.href = 'http://localhost:8000/logout';
     }
   }

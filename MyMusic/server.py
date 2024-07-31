@@ -13,7 +13,7 @@ app = Flask(__name__)
 
 # Configura Flask-Session
 app.config['SECRET_KEY'] = 'your_secret_key'
-app.config['SESSION_TYPE'] = 'filesystem'  # Puoi usare 'redis', 'memcached', ecc.
+app.config['SESSION_TYPE'] = 'filesystem'  
 Session(app)
 
 client_id = os.getenv("CLIENT_ID")
@@ -52,6 +52,19 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
             playlist_id TEXT NOT NULL,
+            img_url TEXT NOT NULL,
+            name TEXT NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+    #crea una tabella dove vengono salvate le canzoni preferite dall'utente
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS songs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            img_url TEXT NOT NULL,
+            name TEXT NOT NULL,
+            artist TEXT NOT NULL,
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
     ''')
@@ -122,6 +135,64 @@ def get_playlist_by_id(token, playlist_id):
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     return response.json()
+
+
+def get_count_songs_in_top50italy(user_id, token):
+    italy_top50_id = "37i9dQZEVXbIQnj7RRhdSX"
+    top50_songs = get_playlist_songs(token, italy_top50_id)
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM songs WHERE user_id = ?', (user_id,))
+    songs = cursor.fetchall()
+    conn.close()
+    #ritorna quali canzoni presenti nel db sono presenti nella playlist TOP 50 ITALY e la loro posizione nella classifica
+    i = 0
+    songs_data = []
+    for song in songs:
+        for top50_song in top50_songs:
+            i = i+1
+            if song["name"] == top50_song["track"]["name"] and song["artist"] == top50_song["track"]["artists"][0]["name"]:
+                song_data = {
+                    "name": song["name"],
+                    "artist": song["artist"],
+                    "image": song["img_url"],
+                    "position": i
+                }
+                songs_data.append(song_data)
+                break
+        i = 0
+    return songs_data
+
+    
+
+def get_count_songs_in_top50global(user_id, token):
+    global_top50_id = "37i9dQZEVXbMDoHDwVN2tF"
+    top50_songs = get_playlist_songs(token, global_top50_id)
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM songs WHERE user_id = ?', (user_id,))
+    songs = cursor.fetchall()
+    conn.close()
+    
+    i = 0
+    songs_data = []
+    for song in songs:
+        for top50_song in top50_songs:
+            i = i+1
+            if song["name"] == top50_song["track"]["name"] and song["artist"] == top50_song["track"]["artists"][0]["name"]:
+                song_data = {
+                    "name": song["name"],
+                    "artist": song["artist"],
+                    "image": song["img_url"],
+                    "position": i
+                }
+                songs_data.append(song_data)
+                break
+        i = 0
+    return songs_data
+
+
+    
     
 @app.route('/')
 def home():
@@ -178,6 +249,10 @@ def login():
             conn.commit()
 
             session['username'] = username  # Salva l'username nella sessione
+            session['italy_top'] = get_count_songs_in_top50italy(user_id, get_token())
+            session['italy_top50'] = len(session['italy_top'])
+            session['global_top'] = get_count_songs_in_top50global(user_id, get_token())
+            session['global_top50'] = len(session['global_top'])
             response = make_response(redirect('/personal'))
             response.set_cookie('jwt_token', token)
             conn.close()
@@ -207,9 +282,28 @@ def token_required(f):
             conn.close()
 
             if not token_record:
+                #cancella la sessione e il cookie
+                session.clear()
                 return jsonify({'message': 'Token is invalid or expired!'}), 401
+            
+            # Aggiorna il token
+            expires_at = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+            new_token = jwt.encode({
+                'user_id': user_id,
+                'username': data['username'],
+                'exp': expires_at
+            }, SECRET_KEY, algorithm='HS256')
 
-            return f(user_id, *args, **kwargs)
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute('UPDATE tokens SET token = ?, expires_at = ? WHERE id = ?', 
+                           (new_token, expires_at, token_record['id']))
+            conn.commit()
+            conn.close()
+            
+            response = make_response(f(user_id, *args, **kwargs))
+            response.set_cookie('jwt_token', new_token)
+            return response
         except jwt.ExpiredSignatureError:
             return render_template('home.html', error="Token scaduto!")
         except jwt.InvalidTokenError:
@@ -222,30 +316,21 @@ def personal(user_id):
     # Ottieni l'username dalla sessione
     username = session.get('username')
 
-    spotify_token = get_token()
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM playlists WHERE user_id = ?', (user_id,))
-    playlists_ids = cursor.fetchall()
+    playlists = cursor.fetchall()
     conn.close()
-    playlists = []
-    for playlist_id in playlists_ids:
-        playlist = get_playlist_by_id(spotify_token, playlist_id["playlist_id"])
-        playlists.append(playlist)
-    img_url = "https://icpapagiovanni.edu.it/wp-content/uploads/2017/11/musica-1.jpg"
     playlists_data = []
     for playlist in playlists:
-        if playlist["images"]:
-            img_url = playlist["images"][0]["url"]
         playlist_data = {
             "name": playlist["name"],
-            "id": playlist["id"],
-            "image": img_url,
-            "name": playlist["name"]
+            "id": playlist["playlist_id"],
+            "image": playlist["img_url"]
         }
         playlists_data.append(playlist_data)
-
-    return render_template('personal.html', username=username, playlists=playlists_data)
+    session_playlists = session.get('playlists')
+    return render_template('personal.html', username=username, playlists=playlists_data, session_playlists=session_playlists, italy_top50=session['italy_top50'], global_top50=session['global_top50'])
 
 @app.route('/search', methods=['GET','POST'])
 @token_required
@@ -305,12 +390,110 @@ def add_playlist(user_id):
         print("Playlist already added")
         conn.close()
         return jsonify({'status': 'error', 'message': 'Playlist già aggiunta!'}), 400
-    else:
-        cursor.execute('INSERT INTO playlists (user_id, playlist_id) VALUES (?, ?)', (user_id, playlist_id))
-        conn.commit()
-        conn.close
-        print("Playlist added")
+    playlist = get_playlist_by_id(get_token(), playlist_id)
+    img_url = "https://icpapagiovanni.edu.it/wp-content/uploads/2017/11/musica-1.jpg"
+    if playlist["images"]:
+        img_url = playlist["images"][0]["url"]
+    # Inserisci la playlist in sessione
+    if 'playlists' not in session:
+        session['playlists'] = []
+    
+    session['playlists'].append({
+        'id': playlist_id,
+        'name': playlist['name'],
+        'image': img_url
+    })
     return jsonify({'status': 'success', 'message': 'Playlist aggiunta con successo!'})
+
+@app.route('/save_playlist/<playlistId>', methods=['GET'])
+@token_required
+def save_playlist(user_id, playlistId):
+    spotify_token = get_token()
+    playlist = get_playlist_by_id(spotify_token, playlistId)
+    playlistName = playlist['name']
+    playlistImage = "https://icpapagiovanni.edu.it/wp-content/uploads/2017/11/musica-1.jpg"
+    if playlist["images"]:
+        playlistImage = playlist["images"][0]["url"]
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('INSERT INTO playlists (user_id, playlist_id, img_url, name) VALUES (?, ?, ?, ?)', 
+                   (user_id, playlistId, playlistImage, playlistName))
+    conn.commit()
+    conn.close()
+    #elimina da session['playlists'] la playlist appena salvata
+    session['playlists'] = [playlist for playlist in session['playlists'] if playlist['id'] != playlistId]
+    return redirect('/personal')
+
+@app.route('/add_song', methods=['POST'])
+@token_required
+def add_song(user_id):
+    data = request.get_json()
+    song_name = data['name']
+    song_artist = data['artist']
+    img_url = data['image']
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM songs WHERE name = ? AND artist = ? AND img_url= ? AND user_id = ?', (song_name, song_artist, img_url, user_id))
+    song = cursor.fetchone()
+    if song:
+        print("Song already added")
+        conn.close()
+        return jsonify({'status': 'error', 'message': 'Canzone già aggiunta!'}), 400
+    # Inserisci la canzone nel db
+    cursor.execute('INSERT INTO songs (user_id, img_url, name, artist) VALUES (?, ?, ?, ?)', 
+                   (user_id, img_url, song_name, song_artist))
+    conn.commit()
+    conn.close()
+    session['italy_top'] = get_count_songs_in_top50italy(user_id, get_token())
+    session['italy_top50'] = len(session['italy_top'])
+    session['global_top'] = get_count_songs_in_top50global(user_id, get_token())
+    session['global_top50'] = len(session['global_top'])
+    return jsonify({'status': 'success', 'message': 'Canzone aggiunta con successo!'})
+
+@app.route('/favorite', methods=['GET'])
+@token_required
+def favorite(user_id):
+    # Ottieni l'username dalla sessione
+    username = session.get('username')
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM songs WHERE user_id = ?', (user_id,))
+    songs = cursor.fetchall()
+    conn.close()
+    songs_data = []
+    for song in songs:
+        #se song è presente in session['italy_top'] o in session['global_top'] allora aggiungi la posizione in classifica
+        position = None
+        country = None
+        for top50_song in session['global_top']:
+            if song["name"] == top50_song["name"] and song["artist"] == top50_song["artist"]:
+                position = top50_song["position"]
+                country = "Global"
+                break
+        if position is None:
+            for top50_song in session['italy_top']:
+                if song["name"] == top50_song["name"] and song["artist"] == top50_song["artist"]:
+                    position = top50_song["position"]
+                    country = "Italy"
+                    break
+        
+        if position is None:
+            song_data = {
+                "name": song["name"],
+                "artist": song["artist"],
+                "image": song["img_url"],
+            }
+        else:
+            song_data = {
+                "name": song["name"],
+                "artist": song["artist"],
+                "image": song["img_url"],
+                "position": position,
+                "country": country
+            }
+        songs_data.append(song_data)
+    return render_template('favorite.html', username=username, songs=songs_data)
 
 @app.route('/logout', methods=['GET'])
 @token_required
@@ -323,6 +506,8 @@ def logout(user_id):
     response = make_response(redirect('/'))
     response.set_cookie('jwt_token', '', expires=0)
     return redirect('/')
+
+
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=8000, debug=True)
