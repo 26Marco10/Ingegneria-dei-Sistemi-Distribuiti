@@ -179,16 +179,22 @@
       </header>
 
   <div class="container">
+    
+    <div class="search-container">
+      <input type="text" id="search-bar" placeholder="Search by song or artist..." value="{{search_query}}"  oninput="filterSongs()">
+    </div>
+    
     <a class="download-button_1" onclick="addPlaylist('{{playlist_id}}')"><i class="fas fa-plus"></i></a>
+    
     <h2 class="playlist-heading">{{playlist_name}}</h2>
     
-    <ul class="song-list">
+    <ul class="song-list" id="song-list">
       {% for song in songs %}
         <li class="song-item" onclick='Player("{{ song.name }}","{{ song.artist }}")'>
             <img src="{{ song.image }}" alt="{{ song.name }}">
             <div class="song-details">
-                <h4>{{ song.name }}</h4>
-                <p>{{ song.artist }}</p>
+                <h4 class="song-name">{{ song.name }}</h4>
+                <p class="song-artist">{{ song.artist }}</p>
             </div>
             <a class="download-button_1" onclick="addSong('{{song.name}}', '{{song.image}}', '{{song.artist}}')"><i class="fas fa-plus"></i></a>
         </li>    
@@ -197,6 +203,7 @@
   </div>
 
 <script>
+
   function confirmLogout() {
     // Mostra una finestra di conferma
     var isConfirmed = confirm('Sei sicuro di voler effettuare il logout?');
@@ -254,6 +261,40 @@
       console.error('Error:', error);
     });
   }
+
+  function filterSongs() {
+    const searchTerm = document.getElementById('search-bar').value.toLowerCase();
+    const songItems = document.querySelectorAll('.song-item');
+
+    songItems.forEach(item => {
+      const songName = item.querySelector('.song-name').textContent.toLowerCase();
+      const songArtist = item.querySelector('.song-artist').textContent.toLowerCase();
+
+      if (songName.includes(searchTerm) || songArtist.includes(searchTerm)) {
+        item.style.display = 'flex';
+      } else {
+        item.style.display = 'none';
+      }
+    });
+
+    fetch('http://localhost:8000/change_search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ search_term: searchTerm }),
+    })
+    .then(response => {
+      if (!response.ok) {
+        console.error('Error during search fetch:', response.statusText);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
+  }
+
+  filterSongs();
 </script>
 </body>
 </html>

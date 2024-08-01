@@ -253,6 +253,7 @@ def login():
             session['italy_top50'] = len(session['italy_top'])
             session['global_top'] = get_count_songs_in_top50global(user_id, get_token())
             session['global_top50'] = len(session['global_top'])
+            session["search"] = ""
             response = make_response(redirect('/personal'))
             response.set_cookie('jwt_token', token)
             conn.close()
@@ -363,7 +364,7 @@ def search(user_id):
 def playlist(user_id, playlist_id, playlist_name):
     # Ottieni l'username dalla sessione
     username = session.get('username')
-
+    search_query = session.get('search')
     spotify_token = get_token()
     songs = get_playlist_songs(spotify_token, playlist_id)
     songs_data = []
@@ -375,7 +376,7 @@ def playlist(user_id, playlist_id, playlist_name):
         }
         songs_data.append(song_data)
 
-    return render_template('playlist.html', username=username, songs=songs_data, playlist_name=playlist_name, playlist_id=playlist_id)
+    return render_template('playlist.html', username=username, songs=songs_data, playlist_name=playlist_name, playlist_id=playlist_id, search_query=search_query)
 
 @app.route('/add_playlist', methods=['POST'])
 @token_required
@@ -384,7 +385,7 @@ def add_playlist(user_id):
     playlist_id = data['id']
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM playlists WHERE playlist_id = ?', (playlist_id,))
+    cursor.execute('SELECT * FROM playlists WHERE playlist_id = ? AND user_id = ?', (playlist_id,user_id))
     playlist = cursor.fetchone()
     if playlist:
         print("Playlist already added")
@@ -495,6 +496,14 @@ def favorite(user_id):
         songs_data.append(song_data)
     return render_template('favorite.html', username=username, songs=songs_data)
 
+@app.route('/change_search', methods=['POST'])
+@token_required
+def change_search(user_id):
+    data = request.get_json()
+    search_query = data['search_term']
+    session['search'] = search_query
+    return jsonify({'status': 'success', 'message': 'Ricerca cambiata con successo!'})
+
 @app.route('/logout', methods=['GET'])
 @token_required
 def logout(user_id):
@@ -505,6 +514,8 @@ def logout(user_id):
     conn.close()
     response = make_response(redirect('/'))
     response.set_cookie('jwt_token', '', expires=0)
+    #cancello la sessione
+    session.clear()
     return redirect('/')
 
 
